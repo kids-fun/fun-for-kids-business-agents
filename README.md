@@ -1,4 +1,4 @@
-# Fun for Kids Provider Toolkit
+# Fun for Kids Provider Agents
 
 This plugin packages the existing Fun for Kids provider automation surface for agent clients like Codex and Claude Code.
 
@@ -23,9 +23,9 @@ After you change the plugin, restart Codex so it picks up the updated local bund
 ## Local test flow
 
 1. Start the app locally with `bun run dev`.
-2. Open the toolkit repo in Codex and install `fun-for-kids-provider-toolkit`.
+2. Open the toolkit repo in Codex and install `fun-for-kids-provider-agents`.
 3. When the MCP client connects to `http://localhost:3000/api/mcp`, complete the OAuth consent flow.
-4. Start a new thread and use `@fun-for-kids-provider-toolkit` or `@fun-for-kids-provider`.
+4. Start a new thread and use `@fun-for-kids-provider-agents` or `@fun-for-kids-provider`.
 5. Use the plugin skill to drive read-first, dry-run-first business workflows.
 
 ## Claude Code packaging
@@ -54,7 +54,7 @@ Once this folder lives in its own public repository, the expected Claude Code in
 
 ```text
 /plugin marketplace add <owner>/<repo>
-/plugin install fun-for-kids-provider-toolkit@fun-for-kids-provider-toolkit
+/plugin install fun-for-kids-provider-agents@fun-for-kids-provider-agents
 ```
 
 The exact `<owner>/<repo>` depends on where you publish the standalone toolkit repository.
@@ -64,7 +64,7 @@ The exact `<owner>/<repo>` depends on where you publish the standalone toolkit r
 - The checked-in `.mcp.json` is intentionally local-first for development.
 - The exported standalone repo can carry a deployed MCP host for staging or preview testing.
 - For staging or production testing, change the MCP URL to your deployed `https://.../api/mcp` host.
-- The monorepo export script can inject the deployed host into the standalone repo with `FUN_FOR_KIDS_MCP_URL=https://<your-host>/api/mcp bun run ai-agents:export`.
-- The GitHub sync workflow supports either `FUN_FOR_KIDS_AI_AGENTS_DEPLOY_KEY` or `FUN_FOR_KIDS_AI_AGENTS_PUSH_TOKEN`, plus the MCP host secret `FUN_FOR_KIDS_AI_AGENTS_MCP_URL`.
+- The monorepo export script can inject the deployed host into the standalone repo with `FUN_FOR_KIDS_MCP_URL=https://<your-host>/api/mcp bun run provider-agents:export`.
+- The GitHub sync workflow supports either `FUN_FOR_KIDS_PROVIDER_AGENTS_DEPLOY_KEY` or `FUN_FOR_KIDS_PROVIDER_AGENTS_PUSH_TOKEN`, plus the MCP host secret `FUN_FOR_KIDS_PROVIDER_AGENTS_MCP_URL`.
 - The provider runtime already enforces idempotency, dry-run approvals, audit logging, and delegated scopes.
 - The plugin exposes one provider-facing skill on purpose. Admin-only workflows can stay in internal tooling instead of the public provider install.

@@ -1,11 +1,11 @@
 {
-  "name": "fun-for-kids-ai-agents-local",
+  "name": "fun-for-kids-provider-agents-local",
   "interface": {
-    "displayName": "Fun for Kids AI Agents"
+    "displayName": "Fun for Kids Provider Agents"
   },
   "plugins": [
     {
-      "name": "fun-for-kids-provider-toolkit",
+      "name": "fun-for-kids-provider-agents",
       "source": {
         "source": "local",
         "path": "./"

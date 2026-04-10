@@ -1,16 +1,16 @@
 {
-  "name": "fun-for-kids-provider-toolkit",
+  "name": "fun-for-kids-provider-agents",
   "version": "0.1.0",
-  "description": "Provider portal automation toolkit for Codex via the Fun for Kids MCP server.",
+  "description": "Provider portal automation package for Codex via the Fun for Kids MCP server.",
   "author": {
     "name": "Fun for Kids"
   },
-  "homepage": "https://github.com/kids-fun/fun-for-kids-ai-agents",
+  "homepage": "https://github.com/kids-fun/fun-for-kids-provider-agents",
   "keywords": ["fun-for-kids", "provider", "mcp", "automation", "codex"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "Fun for Kids Provider Toolkit",
+    "displayName": "Fun for Kids Provider Agents",
     "shortDescription": "Run provider workflows over the Fun for Kids MCP server.",
     "longDescription": "Connect Codex to the Fun for Kids provider automation surface for leads, customers, bookings, sessions, comms, tasks, content, and provider settings with dry-run and approval safeguards.",
     "developerName": "Fun for Kids",
