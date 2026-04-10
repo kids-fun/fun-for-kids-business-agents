@@ -55,5 +55,6 @@ The exact `<owner>/<repo>` depends on where you publish the standalone toolkit r
 - The checked-in `.mcp.json` is intentionally local-first for development.
 - For staging or production testing, change the MCP URL to your deployed `https://.../api/mcp` host.
 - The monorepo export script can inject the deployed host into the standalone repo with `FUN_FOR_KIDS_MCP_URL=https://<your-host>/api/mcp bun run ai-agents:export`.
+- The GitHub sync workflow supports either `FUN_FOR_KIDS_AI_AGENTS_DEPLOY_KEY` or `FUN_FOR_KIDS_AI_AGENTS_PUSH_TOKEN`, plus the MCP host secret `FUN_FOR_KIDS_AI_AGENTS_MCP_URL`.
 - The provider runtime already enforces idempotency, dry-run approvals, audit logging, and delegated scopes.
 - The plugin exposes one provider-facing skill on purpose. Admin-only workflows can stay in internal tooling instead of the public provider install.
