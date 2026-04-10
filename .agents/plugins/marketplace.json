@@ -1,11 +1,11 @@
 {
-  "name": "fun-for-kids-provider-agents-local",
+  "name": "fun-for-kids-business-agents-local",
   "interface": {
-    "displayName": "Fun for Kids Provider Agents"
+    "displayName": "Fun for Kids Business Agents"
   },
   "plugins": [
     {
-      "name": "fun-for-kids-provider-agents",
+      "name": "fun-for-kids-business",
       "source": {
         "source": "local",
         "path": "./"

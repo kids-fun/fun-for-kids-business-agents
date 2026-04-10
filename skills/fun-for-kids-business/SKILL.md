@@ -1,17 +1,17 @@
 ---
-name: fun-for-kids-provider
-description: Provider business workflows for leads, customers, bookings, sessions, attendance, comms, tasks, content, and settings over the Fun for Kids MCP server.
+name: fun-for-kids-business
+description: Business workflows for leads, customers, bookings, sessions, attendance, comms, tasks, content, and settings over the Fun for Kids MCP server.
 ---
 
-# Fun for Kids Provider
+# Fun for Kids Business
 
-Use this skill when a provider wants to manage their business through the Fun for Kids MCP server.
+Use this skill when a business user wants to manage their operations through the Fun for Kids MCP server.
 
 ## Mental Model
 
 - One plugin
 - One MCP server
-- One provider-facing skill
+- One business-facing skill
 
 The MCP tool catalog is still organized by domain, but the user should not have to think in terms of separate `provider-ops`, `content-ops`, or `admin-ops` installs.
 
@@ -102,5 +102,5 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 
 - Do not skip read-before-write validation.
 - Do not live-run medium/high risk writes without a matching dry-run approval.
-- Treat comms sends and provider policy changes as high-scrutiny operations.
-- Do not use admin-scoped tools in the provider-facing plugin workflow.
+- Treat comms sends and business policy changes as high-scrutiny operations.
+- Do not use admin-scoped tools in the business-facing plugin workflow.

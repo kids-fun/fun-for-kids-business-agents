@@ -1,5 +1,5 @@
 {
-  "name": "fun-for-kids-provider-agents",
+  "name": "fun-for-kids-business",
   "owner": {
     "name": "Fun for Kids"
   },
@@ -8,16 +8,16 @@
   },
   "plugins": [
     {
-      "name": "fun-for-kids-provider-agents",
+      "name": "fun-for-kids-business",
       "source": "./",
-      "description": "Manage provider leads, bookings, sessions, comms, listings, and settings over the Fun for Kids MCP server",
+      "description": "Manage leads, bookings, sessions, comms, listings, and business settings over the Fun for Kids MCP server",
       "version": "0.1.0",
       "author": {
         "name": "Fun for Kids"
       },
       "license": "UNLICENSED",
-      "homepage": "https://github.com/kids-fun/fun-for-kids-provider-agents",
-      "keywords": ["fun-for-kids", "provider", "mcp", "claude-code", "automation"]
+      "homepage": "https://github.com/kids-fun/fun-for-kids-business-agents",
+      "keywords": ["fun-for-kids", "business", "mcp", "claude-code", "automation"]
     }
   ]
 }
