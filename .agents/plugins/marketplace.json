@@ -1,0 +1,20 @@
+{
+  "name": "fun-for-kids-ai-agents-local",
+  "interface": {
+    "displayName": "Fun for Kids AI Agents"
+  },
+  "plugins": [
+    {
+      "name": "fun-for-kids-provider-toolkit",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
