@@ -2,7 +2,7 @@
   "mcpServers": {
     "fun-for-kids-business": {
       "type": "http",
-      "url": "https://kids-7fotj46jn-funforkids.vercel.app/api/mcp"
+      "url": "https://funforkids.com.au/api/mcp"
     }
   }
 }

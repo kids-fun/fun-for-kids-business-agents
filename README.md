@@ -8,23 +8,23 @@ This plugin packages the existing Fun for Kids business automation surface for a
 - A Claude Code plugin manifest at `.claude-plugin/plugin.json`
 - A Claude Code marketplace manifest at `.claude-plugin/marketplace.json`
 - A root `plugin.json` for repo-style packaging
-- A local MCP config pointing at `http://localhost:3000/api/mcp`
+- An MCP config pointing at the Fun for Kids business MCP endpoint
 - One public business workflow skill:
   - `fun-for-kids-business`
 
 ## Codex install flow
 
-For repo-local testing, open the standalone business agents repo in Codex and install the plugin from the repo marketplace at `.agents/plugins/marketplace.json`.
+For public repo testing, open the standalone business agents repo in Codex and install the plugin from the repo marketplace at `.agents/plugins/marketplace.json`.
 
 For personal testing, add a personal marketplace entry at `~/.agents/plugins/marketplace.json` that points to a local copy of this plugin under `~/.codex/plugins/`.
 
 After you change the plugin, restart Codex so it picks up the updated local bundle.
 
-## Local test flow
+## Public test flow
 
-1. Start the app locally with `bun run dev`.
-2. Open the toolkit repo in Codex and install `fun-for-kids-business`.
-3. When the MCP client connects to `http://localhost:3000/api/mcp`, complete the OAuth consent flow.
+1. Open this toolkit repo in Codex.
+2. Install `Fun for Kids Business`.
+3. When the MCP client connects to the Fun for Kids MCP endpoint, complete the OAuth consent flow.
 4. Start a new thread and use `@fun-for-kids-business`.
 5. Use the plugin skill to drive read-first, dry-run-first business workflows.
 
@@ -61,9 +61,9 @@ The exact `<owner>/<repo>` depends on where you publish the standalone toolkit r
 
 ## Notes
 
-- The checked-in `.mcp.json` is intentionally local-first for development.
-- The exported standalone repo can carry a deployed MCP host for staging or preview testing.
-- For staging or production testing, change the MCP URL to your deployed `https://.../api/mcp` host.
+- The monorepo source `.mcp.json` is intentionally local-first for development.
+- The exported standalone repo should carry the deployed MCP host.
+- For staging or production testing, export with the desired `https://.../api/mcp` host.
 - The monorepo export script can inject the deployed host into the standalone repo with `FUN_FOR_KIDS_MCP_URL=https://<your-host>/api/mcp bun run business-agents:export`.
 - The GitHub sync workflow supports either `FUN_FOR_KIDS_BUSINESS_AGENTS_DEPLOY_KEY` or `FUN_FOR_KIDS_BUSINESS_AGENTS_PUSH_TOKEN`, plus the MCP host secret `FUN_FOR_KIDS_BUSINESS_AGENTS_MCP_URL`.
 - The provider runtime already enforces idempotency, dry-run approvals, audit logging, and delegated scopes.
