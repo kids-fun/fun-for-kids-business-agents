@@ -29,6 +29,13 @@ The MCP tool catalog is still organized by domain, but the user should not have 
    - `approval_token` for live medium/high writes after dry-run
 6. After writes, confirm what changed and note any follow-up actions.
 
+## Connection Rules
+
+- Use the MCP tools first. Do not inspect local repo files to decide how to answer a normal business request.
+- Do not use Vercel CLI, local curl probes, or plugin config inspection during normal business workflows.
+- If MCP is unavailable or authentication has not completed, stop quickly and tell the user the Fun for Kids MCP connection is unavailable instead of exploring the environment.
+- Do not infer business data from local files. Business data must come from MCP tool responses.
+
 ## Workflow Areas
 
 ### Leads and CRM
