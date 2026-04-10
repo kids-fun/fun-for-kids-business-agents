@@ -1,0 +1,10 @@
+{
+  "name": "fun-for-kids-provider-toolkit",
+  "description": "Provider business tools for Claude Code via the Fun for Kids MCP server",
+  "version": "0.1.0",
+  "author": {
+    "name": "Fun for Kids"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["fun-for-kids", "provider", "mcp", "claude-code", "automation"]
+}

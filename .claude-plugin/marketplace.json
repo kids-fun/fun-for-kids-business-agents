@@ -1,0 +1,23 @@
+{
+  "name": "fun-for-kids-provider-toolkit",
+  "owner": {
+    "name": "Fun for Kids"
+  },
+  "metadata": {
+    "description": "Provider business tools for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "fun-for-kids-provider-toolkit",
+      "source": "./",
+      "description": "Manage provider leads, bookings, sessions, comms, listings, and settings over the Fun for Kids MCP server",
+      "version": "0.1.0",
+      "author": {
+        "name": "Fun for Kids"
+      },
+      "license": "UNLICENSED",
+      "homepage": "https://github.com/kids-fun/fun-for-kids-ai-agents",
+      "keywords": ["fun-for-kids", "provider", "mcp", "claude-code", "automation"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "fun-for-kids-provider-toolkit",
+  "description": "Provider business tools for AI coding agents via the Fun for Kids MCP server",
+  "version": "0.1.0",
+  "author": {
+    "name": "Fun for Kids"
+  },
+  "homepage": "https://github.com/kids-fun/fun-for-kids-ai-agents",
+  "license": "UNLICENSED",
+  "keywords": ["fun-for-kids", "provider", "mcp", "automation", "plugin"]
+}
