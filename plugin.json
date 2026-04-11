@@ -6,6 +6,7 @@
     "name": "Fun for Kids"
   },
   "homepage": "https://github.com/kids-fun/fun-for-kids-business-agents",
+  "repository": "https://github.com/kids-fun/fun-for-kids-business-agents",
   "license": "UNLICENSED",
   "keywords": ["fun-for-kids", "business", "mcp", "automation", "plugin"]
 }
