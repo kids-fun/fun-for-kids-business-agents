@@ -1,0 +1,31 @@
+{
+  "name": "funforkids-business-mcp",
+  "version": "0.1.0",
+  "description": "Stdio MCP server for Fun for Kids business operations",
+  "author": {
+    "name": "Fun for Kids"
+  },
+  "homepage": "https://github.com/kids-fun/fun-for-kids-business-agents",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "funforkids-business-mcp": "./bin/funforkids-business-mcp.mjs"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    ".mcp.json",
+    "plugin.json",
+    "README.md"
+  ],
+  "keywords": [
+    "fun-for-kids",
+    "mcp",
+    "business",
+    "automation",
+    "ai-agent"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

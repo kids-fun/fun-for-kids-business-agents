@@ -1,8 +1,14 @@
 {
   "mcpServers": {
     "fun-for-kids-business": {
-      "type": "http",
-      "url": "https://funforkids.com.au/api/mcp"
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:kids-fun/fun-for-kids-business-agents"
+      ],
+      "env": {
+        "FUN_FOR_KIDS_MCP_URL": "https://funforkids.com.au/api/mcp"
+      }
     }
   }
 }
