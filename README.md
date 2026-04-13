@@ -44,7 +44,7 @@ Add the MCP server in **Cursor > Settings > Tools and MCP > New MCP server**:
 
 ### Stdio CLI (universal)
 
-Works with any MCP client — OpenClaw, Claude Code, Codex, Cursor, Gemini CLI, VS Code.
+Works with any MCP client — Hermes Agent, OpenClaw, Claude Code, Codex, Cursor, Gemini CLI, VS Code.
 
 **Step 1: Login once**
 
@@ -56,11 +56,26 @@ This opens a browser window to sign in with your Fun for Kids account. Tokens ar
 
 **Step 2: Add to your agent**
 
+#### Hermes Agent
+
+Add to `~/.hermes/config.yaml`:
+
+```yaml
+mcp_servers:
+  fun-for-kids-business:
+    command: "npx"
+    args: ["-y", "github:kids-fun/fun-for-kids-business-agents"]
+```
+
+Restart Hermes or run `/reload-mcp` to pick up the new server.
+
 #### OpenClaw
 
 ```bash
 openclaw mcp set fun-for-kids-business '{"command":"npx","args":["-y","github:kids-fun/fun-for-kids-business-agents"]}'
 ```
+
+The CLI handles OAuth automatically. On first use, it will prompt you to sign in via the browser. Tokens are stored at `~/.funforkids/tokens.json` and reused across sessions. If the token expires, run `npx -y github:kids-fun/fun-for-kids-business-agents login` to re-authenticate.
 
 #### Claude Code
 
