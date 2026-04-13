@@ -1,11 +1,51 @@
 ---
 name: fun-for-kids-business
 description: Business workflows for leads, customers, bookings, sessions, attendance, comms, tasks, content, and settings over the Fun for Kids MCP server.
+homepage: https://github.com/kids-fun/fun-for-kids-business-agents
+metadata:
+  openclaw:
+    emoji: "🧒"
+    requires:
+      mcp: ["fun-for-kids-business"]
+    install:
+      - id: "mcp"
+        kind: "mcp"
+        server: "fun-for-kids-business"
+        config:
+          command: "npx"
+          args: ["-y", "github:kids-fun/fun-for-kids-business-agents"]
+        label: "Add Fun for Kids Business MCP server"
+      - id: "login"
+        kind: "shell"
+        command: "npx -y github:kids-fun/fun-for-kids-business-agents login"
+        label: "Sign in to Fun for Kids"
 ---
 
 # Fun for Kids Business
 
 Use this skill when a business user wants to manage their operations through the Fun for Kids MCP server.
+
+## Setup
+
+The skill requires the `fun-for-kids-business` MCP server. The server is a stdio proxy backed by a CLI:
+
+```
+npx -y github:kids-fun/fun-for-kids-business-agents serve
+```
+
+First-time users must authenticate:
+
+```
+npx -y github:kids-fun/fun-for-kids-business-agents login
+```
+
+This opens a browser for OAuth sign-in. Tokens are cached at `~/.fun-for-kids/tokens.json`.
+
+Check connection status:
+
+```
+npx -y github:kids-fun/fun-for-kids-business-agents status
+```
 
 ## Mental Model
 
