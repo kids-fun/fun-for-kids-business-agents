@@ -35,6 +35,7 @@ const SCOPES = [
   'provider.provider.*',
   'admin.providers.list',
   'admin.provider.execute_as_provider_scope',
+  'admin.discovery.*',
 ]
 
 // ---------------------------------------------------------------------------
