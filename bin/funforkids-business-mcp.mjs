@@ -13,10 +13,14 @@ import { createInterface } from 'node:readline'
 // ---------------------------------------------------------------------------
 
 const DEFAULT_MCP_URL = 'https://funforkids.com.au/api/mcp'
+const CLI_NAME = process.env.FUN_FOR_KIDS_MCP_CLI_NAME || 'funforkids-business-mcp'
+const CLIENT_NAME = process.env.FUN_FOR_KIDS_MCP_CLIENT_NAME || 'Fun for Kids Business MCP CLI'
+const PACKAGE_SPEC = process.env.FUN_FOR_KIDS_MCP_PACKAGE_SPEC || 'github:kids-fun/fun-for-kids-business-agents'
+const TOKEN_DIR_NAME = process.env.FUN_FOR_KIDS_MCP_TOKEN_DIR || '.funforkids'
 const MCP_URL = process.env.FUN_FOR_KIDS_MCP_URL || DEFAULT_MCP_URL
-const CONFIG_DIR = join(homedir(), '.funforkids')
+const CONFIG_DIR = join(homedir(), TOKEN_DIR_NAME)
 const TOKEN_FILE = join(CONFIG_DIR, 'tokens.json')
-const SCOPES = [
+const DEFAULT_SCOPES = [
   'context.list_accessible_providers',
   'provider.*',
   'provider.context.get',
@@ -35,8 +39,10 @@ const SCOPES = [
   'provider.provider.*',
   'admin.providers.list',
   'admin.provider.execute_as_provider_scope',
-  'admin.discovery.*',
 ]
+const SCOPES = process.env.FUN_FOR_KIDS_MCP_SCOPES
+  ? process.env.FUN_FOR_KIDS_MCP_SCOPES.split(/\s+/).map((scope) => scope.trim()).filter(Boolean)
+  : DEFAULT_SCOPES
 
 // ---------------------------------------------------------------------------
 // Token storage
@@ -137,7 +143,7 @@ async function login() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      client_name: 'Fun for Kids Business MCP CLI',
+      client_name: CLIENT_NAME,
       redirect_uris: [],
       grant_types: ['authorization_code'],
       response_types: ['code'],
@@ -281,7 +287,7 @@ async function logout() {
 async function serve() {
   const tokens = loadTokens()
   if (!tokens?.access_token) {
-    console.error('Not logged in. Run: funforkids-business-mcp login')
+    console.error(`Not logged in. Run: ${CLI_NAME} login`)
     process.exit(1)
   }
 
@@ -314,7 +320,7 @@ async function serve() {
         id: payload.id ?? null,
         error: {
           code: -32001,
-          message: 'Authentication expired. Run: funforkids-business-mcp login',
+          message: `Authentication expired. Run: ${CLI_NAME} login`,
         },
       }
     }
@@ -383,8 +389,9 @@ switch (command) {
       console.error(`Logged in to ${t.mcp_url}`)
       console.error(`  obtained: ${t.obtained_at}`)
       console.error(`  expires_in: ${t.expires_in}s`)
+      console.error(`  scope: ${t.scope}`)
     } else {
-      console.error('Not logged in. Run: funforkids-business-mcp login')
+      console.error(`Not logged in. Run: ${CLI_NAME} login`)
     }
     break
   }
@@ -393,8 +400,8 @@ switch (command) {
     serve().catch((err) => { console.error(err.message); process.exit(1) })
     break
   default:
-    console.error(`Usage: funforkids-business-mcp [login|logout|status|serve]`)
-    console.error(`   or: npx -y github:kids-fun/fun-for-kids-business-agents [command]`)
+    console.error(`Usage: ${CLI_NAME} [login|logout|status|serve]`)
+    console.error(`   or: npx -y ${PACKAGE_SPEC} [command]`)
     console.error(`\nCommands:`)
     console.error(`  serve    Start stdio MCP server (default)`)
     console.error(`  login    Authenticate with Fun for Kids`)
@@ -402,5 +409,7 @@ switch (command) {
     console.error(`  status   Show current auth status`)
     console.error(`\nEnvironment:`)
     console.error(`  FUN_FOR_KIDS_MCP_URL  Override server URL (default: ${DEFAULT_MCP_URL})`)
+    console.error(`  FUN_FOR_KIDS_MCP_TOKEN_DIR  Override token dir under home (default: ${TOKEN_DIR_NAME})`)
+    console.error(`  FUN_FOR_KIDS_MCP_SCOPES  Space-separated OAuth scopes`)
     process.exit(1)
 }
