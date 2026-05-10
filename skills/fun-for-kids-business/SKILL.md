@@ -117,6 +117,7 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.bookings.preflight_check`
 - `provider.transfers.options.list`
 - `provider.payments.outstanding.list`
+- `provider.reports.catalog.get`
 
 ### Sessions and Attendance
 
