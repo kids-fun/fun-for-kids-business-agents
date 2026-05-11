@@ -111,6 +111,8 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.bookings.transfer_assignment`
 - `provider.bookings.convert_between_experiences`
 - `provider.bookings.redeem_makeup_credit`
+- `provider.bookings.split_class.link`
+- `provider.bookings.split_class.unlink`
 - `provider.bookings.list`
 - `provider.bookings.note.update`
 - `provider.bookings.status.update`
@@ -133,6 +135,7 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.sessions.occurrences.update`
 - `provider.sessions.occurrences.cancel`
 - `provider.sessions.occurrences.restore`
+- `provider.sessions.occurrences.reschedule`
 - `provider.attendance.exceptions.list`
 - `provider.attendance.targets.resolve`
 - `provider.attendance.upsert`
