@@ -144,10 +144,13 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 ### Offerings, Schedules, Pricing, and Program Runs
 
 - `provider.offerings.list`
+- `provider.offerings.upsert`
+- `provider.offerings.delete`
 - `provider.schedules.list`
 - `provider.schedules.update`
 - `provider.schedules.delete`
 - `provider.pricing.list`
+- `provider.pricing.upsert`
 - `provider.program_runs.list`
 - `provider.program_runs.upsert`
 - `provider.program_runs.clone`
@@ -182,6 +185,8 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.comms.templates.delete`
 - `provider.comms.campaigns.delete`
 - `provider.comms.campaigns.send`
+- `provider.notifications.list`
+- `provider.notifications.mark_seen`
 
 ### Listings and Business Setup
 
@@ -189,16 +194,20 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.activities.create`
 - `provider.activities.update`
 - `provider.activities.publish`
+- `provider.activities.delete`
 - `provider.programs.list`
 - `provider.programs.create`
 - `provider.programs.update`
 - `provider.programs.publish`
+- `provider.programs.delete`
 - `provider.places.list`
 - `provider.places.create`
 - `provider.places.update`
 - `provider.places.publish`
+- `provider.places.delete`
 - `provider.provider.update`
 - `provider.provider.primary_location.upsert`
+- `provider.provider.location_links.clear`
 
 ## Safety Rules
 
