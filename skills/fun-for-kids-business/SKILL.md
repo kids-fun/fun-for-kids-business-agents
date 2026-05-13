@@ -117,6 +117,10 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.bookings.note.update`
 - `provider.bookings.status.update`
 - `provider.bookings.preflight_check`
+- `provider.bookings.flags.list`
+- `provider.bookings.flags.assignments.list`
+- `provider.bookings.flags.create`
+- `provider.bookings.flags.add`
 - `provider.transfers.options.list`
 - `provider.payments.outstanding.list`
 - `provider.reports.catalog.get`
