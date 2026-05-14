@@ -124,6 +124,7 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.transfers.options.list`
 - `provider.payments.outstanding.list`
 - `provider.reports.catalog.get`
+- `provider.audit.events.list`
 
 ### Sessions and Attendance
 
@@ -195,16 +196,19 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 ### Listings and Business Setup
 
 - `provider.activities.list`
+- `provider.activities.get`
 - `provider.activities.create`
 - `provider.activities.update`
 - `provider.activities.publish`
 - `provider.activities.delete`
 - `provider.programs.list`
+- `provider.programs.get`
 - `provider.programs.create`
 - `provider.programs.update`
 - `provider.programs.publish`
 - `provider.programs.delete`
 - `provider.places.list`
+- `provider.places.get`
 - `provider.places.create`
 - `provider.places.update`
 - `provider.places.publish`
