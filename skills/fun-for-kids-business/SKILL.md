@@ -111,6 +111,9 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.bookings.transfer_assignment`
 - `provider.bookings.convert_between_experiences`
 - `provider.bookings.redeem_makeup_credit`
+- `provider.bookings.makeup.options.list`
+- `provider.bookings.makeup.create`
+- `provider.bookings.makeup.reschedule`
 - `provider.bookings.split_class.link`
 - `provider.bookings.split_class.unlink`
 - `provider.bookings.list`
@@ -124,6 +127,8 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 - `provider.transfers.options.list`
 - `provider.payments.outstanding.list`
 - `provider.reports.catalog.get`
+- `provider.reports.absence_makeup.get`
+- `provider.reports.absence_makeup.note.update`
 - `provider.audit.events.list`
 
 ### Sessions and Attendance
