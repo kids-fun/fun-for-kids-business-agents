@@ -117,8 +117,8 @@ Use this catalog when choosing exact MCP tool names or checking workflow coverag
 - `provider.comms.templates.create`
 - `provider.comms.templates.update`
 - `provider.comms.templates.delete`
-- `provider.comms.campaigns.delete`
-- `provider.comms.campaigns.send`
+- `provider.comms.sends.delete`
+- `provider.comms.sends.send`
 - `provider.notifications.list`
 - `provider.notifications.mark_seen`
 
