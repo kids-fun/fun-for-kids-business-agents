@@ -122,6 +122,21 @@ Use this catalog when choosing exact MCP tool names or checking workflow coverag
 - `provider.notifications.list`
 - `provider.notifications.mark_seen`
 
+## Growth, Promo Codes, and Checkout Links
+
+- `provider.promo_codes.list`
+- `provider.promo_codes.upsert`
+- `provider.promo_codes.set_active`
+- `provider.checkout_links.list`
+- `provider.checkout_links.upsert`
+- `provider.checkout_links.set_active`
+
+## Family Portal and Feedback Review
+
+- `provider.family_portal.invite`
+- `provider.feedback.queue.list`
+- `provider.feedback.review`
+
 ## Listings and Business Setup
 
 - `provider.activities.list`

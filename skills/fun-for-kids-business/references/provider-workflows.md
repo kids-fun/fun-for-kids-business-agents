@@ -48,3 +48,23 @@ Use these rules for multi-tool workflows and high-risk writes.
 - Resolve the additional schedule before writing.
 - Use `provider.bookings.split_class.link` to add the second class under the existing booking.
 - Do not create a second paid booking for split-class attendance.
+
+## Promo Codes and Checkout Links
+
+- Use `provider.promo_codes.list` before creating or editing a code; codes are unique per provider and stored uppercase.
+- A promo code takes either `amountOffCents` or `percentOff`, never both.
+- For scoped codes, resolve target ids first: programs/activities via listing list tools, periods via `provider.program_runs.list`, classes via `provider.classes.list`.
+- Use `provider.promo_codes.set_active` to pause a code instead of deleting it.
+- Checkout links need 1-2 active paid pricing option ids; resolve them with `provider.pricing.list` before `provider.checkout_links.upsert`.
+- The checkout link public token is generated on create and never rotated on update, so existing shared URLs stay valid.
+
+## Family Portal Invites
+
+- `provider.family_portal.invite` sends real invite emails to customer contacts. Treat it as high risk: resolve customer ids with `provider.customers.list`, confirm the exact recipients with the user, and dry-run first.
+- Up to 50 customers per call. The result reports invited, linked, already-linked, skipped, and failed contacts; relay skips and failures to the user.
+
+## Instructor Feedback Review
+
+- Use `provider.feedback.queue.list` (default status `submitted`) to find feedback awaiting review.
+- `provider.feedback.review` supports `approve` (release for delivery to the family), `request_changes` (return to the instructor with `reviewNote`), and `save_edit` (save an edited `body` without changing status).
+- Approving feedback triggers delivery to the family, so show the final body to the user before approving.
