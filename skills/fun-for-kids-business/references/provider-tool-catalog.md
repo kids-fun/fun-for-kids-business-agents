@@ -53,6 +53,7 @@ Use this catalog when choosing exact MCP tool names or checking workflow coverag
 - `provider.reports.catalog.get`
 - `provider.reports.absence_makeup.get`
 - `provider.reports.absence_makeup.note.update`
+- `provider.reports.enrolments.get`
 - `provider.audit.events.list`
 
 ## Sessions and Attendance
