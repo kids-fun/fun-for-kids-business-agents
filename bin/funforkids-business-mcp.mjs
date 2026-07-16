@@ -138,90 +138,102 @@ async function discoverOAuth() {
 
 async function login() {
   const metadata = await discoverOAuth()
+  const { verifier, challenge } = generatePkce()
+  const state = base64url(randomBytes(16))
 
+  let callbackResolve
+  let callbackReject
+  const callbackPromise = new Promise((resolve, reject) => {
+    callbackResolve = resolve
+    callbackReject = reject
+  })
+
+  const server = createServer((req, res) => {
+    const url = new URL(req.url, `http://127.0.0.1`)
+    if (url.pathname !== '/callback') {
+      res.writeHead(404)
+      res.end()
+      return
+    }
+
+    const code = url.searchParams.get('code')
+    const returnedState = url.searchParams.get('state')
+
+    if (returnedState !== state) {
+      res.writeHead(400)
+      res.end('State mismatch')
+      callbackReject(new Error('OAuth state mismatch'))
+      server.close()
+      return
+    }
+
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    res.end('<html><body><h2>Login successful!</h2><p>You can close this tab.</p></body></html>')
+    server.close()
+    callbackResolve(code)
+  })
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+
+  const redirectUri = `http://127.0.0.1:${server.address().port}/callback`
   const regRes = await httpRequest(metadata.registration_endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       client_name: CLIENT_NAME,
-      redirect_uris: [],
+      redirect_uris: [redirectUri],
       grant_types: ['authorization_code'],
       response_types: ['code'],
     }),
   })
+
+  if (regRes.status < 200 || regRes.status >= 300) {
+    server.close()
+    throw new Error(`OAuth client registration failed: ${regRes.body}`)
+  }
+
   const client = regRes.json()
+  if (!client.client_id) {
+    server.close()
+    throw new Error('OAuth client registration did not return a client_id')
+  }
 
-  const { verifier, challenge } = generatePkce()
-  const state = base64url(randomBytes(16))
-
-  const callbackPromise = new Promise((resolve, reject) => {
-    const server = createServer((req, res) => {
-      const url = new URL(req.url, `http://127.0.0.1`)
-      if (url.pathname !== '/callback') {
-        res.writeHead(404)
-        res.end()
-        return
-      }
-
-      const code = url.searchParams.get('code')
-      const returnedState = url.searchParams.get('state')
-
-      if (returnedState !== state) {
-        res.writeHead(400)
-        res.end('State mismatch')
-        reject(new Error('OAuth state mismatch'))
-        server.close()
-        return
-      }
-
-      res.writeHead(200, { 'Content-Type': 'text/html' })
-      res.end('<html><body><h2>Login successful!</h2><p>You can close this tab.</p></body></html>')
-      server.close()
-      resolve(code)
-    })
-
-    server.listen(0, '127.0.0.1', () => {
-      const port = server.address().port
-
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: client.client_id,
-        state,
-        code_challenge: challenge,
-        code_challenge_method: 'S256',
-        redirect_uri: `http://127.0.0.1:${port}/callback`,
-        scope: SCOPES.join(' '),
-      })
-
-      const authorizeUrl = `${metadata.authorization_endpoint}?${params}`
-
-      console.error(`\nOpen this URL to sign in:\n${authorizeUrl}\n`)
-
-      try {
-        const cmd = process.platform === 'darwin'
-          ? 'open'
-          : process.platform === 'win32'
-            ? 'start'
-            : 'xdg-open'
-        execSync(`${cmd} "${authorizeUrl}"`, { stdio: 'ignore' })
-      } catch {
-        // browser open failed, user will copy-paste
-      }
-
-      console.error('Waiting for browser callback...')
-
-      // Store redirect_uri and client_id for token exchange
-      server._redirectUri = `http://127.0.0.1:${port}/callback`
-      server._clientId = client.client_id
-    })
-
-    setTimeout(() => {
-      reject(new Error('Login timed out after 120 seconds'))
-      server.close()
-    }, 120_000)
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.client_id,
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    redirect_uri: redirectUri,
+    scope: SCOPES.join(' '),
   })
 
-  const code = await callbackPromise
+  const authorizeUrl = `${metadata.authorization_endpoint}?${params}`
+
+  console.error(`\nOpen this URL to sign in:\n${authorizeUrl}\n`)
+
+  try {
+    const cmd = process.platform === 'darwin'
+      ? 'open'
+      : process.platform === 'win32'
+        ? 'start'
+        : 'xdg-open'
+    execSync(`${cmd} "${authorizeUrl}"`, { stdio: 'ignore' })
+  } catch {
+    // browser open failed, user will copy-paste
+  }
+
+  console.error('Waiting for browser callback...')
+
+  const timeout = setTimeout(() => {
+    callbackReject(new Error('Login timed out after 120 seconds'))
+    server.close()
+  }, 120_000)
+
+  const code = await callbackPromise.finally(() => clearTimeout(timeout))
 
   const tokenRes = await httpRequest(metadata.token_endpoint, {
     method: 'POST',
@@ -230,6 +242,7 @@ async function login() {
       grant_type: 'authorization_code',
       client_id: client.client_id,
       code,
+      redirect_uri: redirectUri,
       code_verifier: verifier,
     }),
   })
