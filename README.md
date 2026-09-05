@@ -6,6 +6,8 @@ This plugin bundles the Fun for Kids business skill plus the production MCP serv
 
 Public repo: https://github.com/kids-fun/fun-for-kids-business-agents
 
+Current toolkit version: **0.2.0**
+
 ## Install
 
 ### Plugin (recommended)
@@ -75,7 +77,7 @@ Restart Hermes or run `/reload-mcp` to pick up the new server.
 openclaw mcp set fun-for-kids-business '{"command":"npx","args":["-y","github:kids-fun/fun-for-kids-business-agents"]}'
 ```
 
-The CLI handles OAuth automatically. On first use, it will prompt you to sign in via the browser. Tokens are stored at `~/.funforkids/tokens.json` and reused across sessions. If the token expires, run `npx -y github:kids-fun/fun-for-kids-business-agents login` to re-authenticate.
+The CLI handles the OAuth sign-in flow. Tokens are stored at `~/.funforkids/tokens.json` and reused until they expire. The server does not currently issue refresh tokens, so an expired or revoked login requires `npx -y github:kids-fun/fun-for-kids-business-agents login` again.
 
 #### Claude Code
 
@@ -130,7 +132,8 @@ Once installed, the CLI is available as `funforkids-business-mcp`:
 ```bash
 npx -y github:kids-fun/fun-for-kids-business-agents login     # Authenticate
 npx -y github:kids-fun/fun-for-kids-business-agents logout    # Revoke token
-npx -y github:kids-fun/fun-for-kids-business-agents status    # Check auth
+npx -y github:kids-fun/fun-for-kids-business-agents status    # Verify auth and server connectivity
+npx -y github:kids-fun/fun-for-kids-business-agents version   # Show the running CLI version
 npx -y github:kids-fun/fun-for-kids-business-agents           # Start MCP server
 ```
 
@@ -139,6 +142,10 @@ Set `FUN_FOR_KIDS_MCP_URL` to override the server URL for local development:
 ```bash
 FUN_FOR_KIDS_MCP_URL=http://localhost:3000/api/mcp npx -y github:kids-fun/fun-for-kids-business-agents login
 ```
+
+HTTP requests time out after 15 seconds by default. For a slower private deployment, set `FUN_FOR_KIDS_MCP_REQUEST_TIMEOUT_MS` to a positive value up to 120000.
+
+The proxy automatically creates a new MCP session when an expired session interrupts a read. It does not automatically replay writes: it reconnects and returns an error asking the client to retry the write explicitly. Consecutive read tools can run concurrently, while writes remain ordered behind earlier requests.
 
 ### npm (optional)
 
@@ -177,7 +184,9 @@ For write operations, the skill is designed to read first, dry-run first, and as
 
 - **"Not logged in"** — Run `npx funforkids-business-mcp login` to authenticate.
 - **"Authentication expired"** — Re-run login. Tokens have a limited lifetime.
-- **MCP connection unavailable** — Restart the agent client and reinstall or reload the plugin.
+- **Connection status is unclear** — Run `npx -y github:kids-fun/fun-for-kids-business-agents status`. It performs an authenticated MCP handshake and exits unsuccessfully when the endpoint cannot be reached.
+- **"MCP session restarted"** — The failed write was not replayed. Retry it explicitly once the agent has reviewed the returned error.
+- **MCP connection unavailable** — Check the status command, then restart the agent client and reinstall or reload the plugin if needed.
 - **Wrong server URL** — Confirm `.mcp.json` points to `https://funforkids.com.au/api/mcp` or that `FUN_FOR_KIDS_MCP_URL` is set correctly.
 - **Write action blocked** — Check whether the agent is still in dry-run mode or whether your account lacks the required delegated scope.
 
@@ -190,5 +199,15 @@ Export the public repo with the production MCP host:
 ```bash
 FUN_FOR_KIDS_MCP_URL=https://funforkids.com.au/api/mcp bun run business-agents:export
 ```
+
+The default GitHub package spec follows the standalone repo's current default branch so fresh installs keep working before a release tag exists. For a reproducible release, create the standalone release commit and export its install commands with an immutable tag or full commit ref:
+
+```bash
+FUN_FOR_KIDS_MCP_URL=https://funforkids.com.au/api/mcp \
+FUN_FOR_KIDS_MCP_PACKAGE_SPEC='<immutable GitHub package spec>' \
+bun run business-agents:export
+```
+
+For example, the package spec for an existing `v0.2.0` release would end in `#v0.2.0`. Use that command only when the referenced tag or commit will exist for the exported standalone revision. The export validates manifest versions, CLI syntax, required public files, package references, and sensitive-file exclusions.
 
 Only plugin manifests, skills, CLI, and public docs should be published here. Keep application source, secrets, internal admin tooling, and local `.env` files out of this repo.

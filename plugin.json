@@ -1,7 +1,7 @@
 {
   "name": "fun-for-kids-business",
   "description": "Business tools for AI coding agents via the Fun for Kids MCP server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Fun for Kids"
   },

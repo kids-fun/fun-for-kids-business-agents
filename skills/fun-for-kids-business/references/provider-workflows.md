@@ -68,3 +68,42 @@ Use these rules for multi-tool workflows and high-risk writes.
 - Use `provider.feedback.queue.list` (default status `submitted`) to find feedback awaiting review.
 - `provider.feedback.review` supports `approve` (release for delivery to the family), `request_changes` (return to the instructor with `reviewNote`), and `save_edit` (save an edited `body` without changing status).
 - Approving feedback triggers delivery to the family, so show the final body to the user before approving.
+
+## Retries and approvals
+
+- Generate a fresh idempotency key for each new intended action. Keep the same key and exact input across that action's dry-run, approval and retry. A repeated instruction later is a new intent, even when the fields match.
+- Review the returned preview before asking for approval. `resolved_state` previews include current targets and proposed changes; `validated_input` previews explicitly lack a complete state comparison. Do not describe a fallback as a verified before/after diff.
+- If target state changed after approval, read it again and request a fresh preview. Do not silently reuse approval for different contents, recipients, prices or targets.
+- An `EXECUTION_UNCERTAIN` result requires readback before any new intent. Billing sends and automatic-payment offers may already have an external effect; do not invent a new idempotency key to retry them automatically.
+- Check `hasMore`, cursors and pagination before making complete-list claims. A returned-page payment subtotal is not the entire outstanding balance.
+
+## Family requests and make-up rules
+
+- Use `provider.requests.list` and the corresponding request review tool for existing family requests. Completing make-up help records resolution; it does not book the child.
+- Use `provider.makeup_mappings.list` before `provider.makeup_mappings.replace`. Replacement is the whole directional rule set for one program; include every retained rule. Same-class eligibility remains implicit.
+
+## Pricing, forms and resources
+
+- Reusable price definitions and discount activation live in the pricing catalog tools. Assigning prices to a particular offering is a separate operation; resolve the actual offering, duration and coverage period first.
+- Read existing forms before saving replacements. Publishing advances the live form revision; saving recipient records does not send an email. Link edits preserve the public URL unless token rotation was explicitly requested.
+- Instructor resources can be created, edited and removed using the resource tools. Confirm the exact policy, process or training content being replaced.
+
+## Files and session photos
+
+- Files library uploads and session photos are different destinations. Saving a file does not send it, read its contents or publish it to families.
+- Upload tools return provider-scoped signed destinations. The host client must transfer the actual bytes, then call finalize and read status. Never pretend the model uploaded bytes from a filename or a URL alone.
+- Use the original filename, byte size, MIME type and digest requested by the upload schema. Retry the same upload with the same action/batch identifier; do not replace upload metadata after preparation.
+- A queued upload is not complete. Read terminal status and report individual failures rather than claiming the whole batch succeeded.
+- Photo publication requires explicit consent and may notify families. Show the exact session, child and photo selection first. Upload private photos before a separate publication approval when consent was not supplied.
+
+## Billing
+
+- Billing operations require the same provider-admin access as the Billing page.
+- Show the resolved invoice or receipt, amount, recipient, final subject/body and attachments before sending. Issuing a document and emailing it are separate effects.
+- Automatic-payment creation sends a family consent offer; it does not mean consent was given or a payment was collected. Report the returned agreement state.
+- Use `provider.portal.handoff.get` for authenticated PDF downloads and Stripe onboarding. Its link is a remaining human step, not completed execution.
+
+## Imports and Quick Fill
+
+- Import tools can inspect existing jobs and staged rows, update matches, approve/unapprove rows, commit approved CRM rows and cancel jobs.
+- Source upload/analysis, listing-stage import commit and Quick Fill still require the portal. Start with the handoff tool and explain the remaining action. Do not claim an import parser is running because a link was returned.

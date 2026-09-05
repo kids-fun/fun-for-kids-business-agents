@@ -39,13 +39,15 @@ First-time users must authenticate:
 npx -y github:kids-fun/fun-for-kids-business-agents login
 ```
 
-This opens a browser for OAuth sign-in. Tokens are cached at `~/.fun-for-kids/tokens.json`.
+This opens a browser for OAuth sign-in. Tokens are cached at `~/.funforkids/tokens.json`. The server does not currently issue refresh tokens; if authentication expires, run the login command again and restart the MCP client.
 
 Check connection status:
 
 ```
 npx -y github:kids-fun/fun-for-kids-business-agents status
 ```
+
+`status` performs an authenticated server handshake rather than only checking for a token file. If a write reports that the MCP session restarted, retry it explicitly; the proxy never automatically replays a write.
 
 ## Mental Model
 
@@ -64,10 +66,10 @@ The MCP tool catalog is still organized by domain, but the user should not have 
 5. For write tools, always send `_meta` with:
    - `tool_risk`
    - `requires_confirmation`
-   - `idempotency_key`
+   - `idempotency_key`: fresh for each new intended action, stable across its preview, approval and retries
    - `dry_run` for medium/high risk tools
    - `approval_token` for live medium/high writes after dry-run
-6. After writes, confirm what changed and note any follow-up actions.
+6. After writes, read back what changed and report partial or uncertain outcomes. Never automatically replace an idempotency key to retry an uncertain external send or payment offer.
 
 ## References
 

@@ -11,7 +11,7 @@
       "name": "fun-for-kids-business",
       "source": "./",
       "description": "Manage leads, bookings, sessions, comms, listings, and business settings over the Fun for Kids MCP server",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Fun for Kids"
       },

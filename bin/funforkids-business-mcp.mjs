@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { createServer } from 'node:http'
+import http, { createServer } from 'node:http'
+import https from 'node:https'
 import { createHash, randomBytes } from 'node:crypto'
 import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { createInterface } from 'node:readline'
 
 // ---------------------------------------------------------------------------
@@ -13,6 +14,7 @@ import { createInterface } from 'node:readline'
 // ---------------------------------------------------------------------------
 
 const DEFAULT_MCP_URL = 'https://funforkids.com.au/api/mcp'
+const CLI_VERSION = '0.2.0'
 const CLI_NAME = process.env.FUN_FOR_KIDS_MCP_CLI_NAME || 'funforkids-business-mcp'
 const CLIENT_NAME = process.env.FUN_FOR_KIDS_MCP_CLIENT_NAME || 'Fun for Kids Business MCP CLI'
 const PACKAGE_SPEC = process.env.FUN_FOR_KIDS_MCP_PACKAGE_SPEC || 'github:kids-fun/fun-for-kids-business-agents'
@@ -20,6 +22,7 @@ const TOKEN_DIR_NAME = process.env.FUN_FOR_KIDS_MCP_TOKEN_DIR || '.funforkids'
 const MCP_URL = process.env.FUN_FOR_KIDS_MCP_URL || DEFAULT_MCP_URL
 const CONFIG_DIR = join(homedir(), TOKEN_DIR_NAME)
 const TOKEN_FILE = join(CONFIG_DIR, 'tokens.json')
+const REQUEST_TIMEOUT_MS = parsePositiveInteger(process.env.FUN_FOR_KIDS_MCP_REQUEST_TIMEOUT_MS, 15_000)
 const DEFAULT_SCOPES = [
   'context.list_accessible_providers',
   'provider.*',
@@ -44,6 +47,11 @@ const SCOPES = process.env.FUN_FOR_KIDS_MCP_SCOPES
   ? process.env.FUN_FOR_KIDS_MCP_SCOPES.split(/\s+/).map((scope) => scope.trim()).filter(Boolean)
   : DEFAULT_SCOPES
 
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value ?? '', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 120_000) : fallback
+}
+
 // ---------------------------------------------------------------------------
 // Token storage
 // ---------------------------------------------------------------------------
@@ -67,6 +75,22 @@ function clearTokens() {
   } catch { /* ignore */ }
 }
 
+function tokenExpiresAt(tokens) {
+  const obtainedAt = Date.parse(tokens?.obtained_at ?? '')
+  const expiresIn = Number(tokens?.expires_in)
+  if (!Number.isFinite(obtainedAt) || !Number.isFinite(expiresIn) || expiresIn <= 0) return null
+  return new Date(obtainedAt + expiresIn * 1000)
+}
+
+function isTokenExpired(tokens) {
+  const expiresAt = tokenExpiresAt(tokens)
+  return expiresAt ? expiresAt.getTime() <= Date.now() : false
+}
+
+function loginInstruction() {
+  return `Run: ${CLI_NAME} login`
+}
+
 // ---------------------------------------------------------------------------
 // PKCE helpers
 // ---------------------------------------------------------------------------
@@ -88,35 +112,53 @@ function generatePkce() {
 function httpRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url)
-    const mod = parsed.protocol === 'https:' ? import('node:https') : import('node:http')
+    const transport = parsed.protocol === 'https:' ? https : http
+    const method = options.method || 'GET'
+    const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS
+    let settled = false
 
-    mod.then(({ default: http }) => {
-      const req = http.request(parsed, {
-        method: options.method || 'GET',
-        headers: options.headers || {},
-      }, (res) => {
-        const chunks = []
-        res.on('data', (c) => chunks.push(c))
-        res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8')
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body,
-            json() { return JSON.parse(body) },
-          })
+    const req = transport.request(parsed, {
+      method,
+      headers: options.headers || {},
+    }, (res) => {
+      const chunks = []
+      res.on('data', (c) => chunks.push(c))
+      res.on('end', () => {
+        if (settled) return
+        settled = true
+        const body = Buffer.concat(chunks).toString('utf8')
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          body,
+          json() { return JSON.parse(body) },
         })
       })
-
-      req.on('error', reject)
-
-      if (options.body) {
-        req.write(typeof options.body === 'string' ? options.body : JSON.stringify(options.body))
-      }
-
-      req.end()
     })
+
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error(`Request timed out after ${timeoutMs}ms (${method} ${parsed.origin}${parsed.pathname})`))
+    })
+    req.on('error', (error) => {
+      if (settled) return
+      settled = true
+      reject(error)
+    })
+
+    if (options.body) {
+      req.write(typeof options.body === 'string' ? options.body : JSON.stringify(options.body))
+    }
+
+    req.end()
   })
+}
+
+function parseJsonResponse(response) {
+  try {
+    return response.json()
+  } catch {
+    return null
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +171,14 @@ async function discoverOAuth() {
   const path = parsed.pathname
 
   const res = await httpRequest(`${base}/.well-known/oauth-authorization-server${path}`)
-  return res.json()
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`OAuth discovery failed (${res.status}): ${res.body}`)
+  }
+  const metadata = res.json()
+  if (!metadata.authorization_endpoint || !metadata.registration_endpoint || !metadata.token_endpoint) {
+    throw new Error('OAuth discovery response is missing required endpoints')
+  }
+  return metadata
 }
 
 // ---------------------------------------------------------------------------
@@ -157,12 +206,22 @@ async function login() {
     }
 
     const code = url.searchParams.get('code')
+    const oauthError = url.searchParams.get('error')
     const returnedState = url.searchParams.get('state')
 
     if (returnedState !== state) {
       res.writeHead(400)
       res.end('State mismatch')
       callbackReject(new Error('OAuth state mismatch'))
+      server.close()
+      return
+    }
+
+    if (oauthError || !code) {
+      const message = oauthError ? `OAuth authorization failed: ${oauthError}` : 'OAuth callback did not include an authorization code'
+      res.writeHead(400)
+      res.end(message)
+      callbackReject(new Error(message))
       server.close()
       return
     }
@@ -221,7 +280,11 @@ async function login() {
       : process.platform === 'win32'
         ? 'start'
         : 'xdg-open'
-    execSync(`${cmd} "${authorizeUrl}"`, { stdio: 'ignore' })
+    if (process.platform === 'win32') {
+      execFileSync('cmd', ['/c', 'start', '', authorizeUrl], { stdio: 'ignore' })
+    } else {
+      execFileSync(cmd, [authorizeUrl], { stdio: 'ignore' })
+    }
   } catch {
     // browser open failed, user will copy-paste
   }
@@ -234,6 +297,9 @@ async function login() {
   }, 120_000)
 
   const code = await callbackPromise.finally(() => clearTimeout(timeout))
+  if (!code) {
+    throw new Error('OAuth callback did not include an authorization code')
+  }
 
   const tokenRes = await httpRequest(metadata.token_endpoint, {
     method: 'POST',
@@ -248,11 +314,13 @@ async function login() {
   })
 
   if (tokenRes.status !== 200) {
-    console.error('Token exchange failed:', tokenRes.body)
-    process.exit(1)
+    throw new Error(`Token exchange failed: ${tokenRes.body}`)
   }
 
   const tokenData = tokenRes.json()
+  if (!tokenData.access_token) {
+    throw new Error('Token exchange did not return an access_token')
+  }
   saveTokens({
     access_token: tokenData.access_token,
     token_type: tokenData.token_type,
@@ -300,57 +368,180 @@ async function logout() {
 async function serve() {
   const tokens = loadTokens()
   if (!tokens?.access_token) {
-    console.error(`Not logged in. Run: ${CLI_NAME} login`)
+    console.error(`Not logged in. ${loginInstruction()}`)
+    process.exit(1)
+  }
+  if (isTokenExpired(tokens)) {
+    const expiresAt = tokenExpiresAt(tokens)
+    clearTokens()
+    console.error(`Authentication expired${expiresAt ? ` at ${expiresAt.toISOString()}` : ''}. ${loginInstruction()}`)
+    process.exit(1)
+  }
+  if (tokens.mcp_url && tokens.mcp_url !== MCP_URL) {
+    console.error(`Stored login is for ${tokens.mcp_url}, but this client is configured for ${MCP_URL}. ${loginInstruction()}`)
     process.exit(1)
   }
 
   let mcpSessionId = null
+  let sessionResetPromise = null
+  let authenticationInvalid = false
 
-  async function proxyRpc(payload) {
+  function rpcError(payload, code, message) {
+    return {
+      jsonrpc: '2.0',
+      id: payload.id ?? null,
+      error: { code, message },
+    }
+  }
+
+  function requestHeaders(includeSession = true) {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Authorization': `Bearer ${tokens.access_token}`,
     }
+    if (includeSession && mcpSessionId) headers['Mcp-Session-Id'] = mcpSessionId
+    return headers
+  }
 
-    if (mcpSessionId) {
-      headers['Mcp-Session-Id'] = mcpSessionId
-    }
-
+  async function rawRpc(payload, { includeSession = true } = {}) {
     const res = await httpRequest(MCP_URL, {
       method: 'POST',
-      headers,
+      headers: requestHeaders(includeSession),
       body: JSON.stringify(payload),
     })
+    if (res.headers['mcp-session-id']) mcpSessionId = res.headers['mcp-session-id']
+    return res
+  }
 
-    if (res.headers['mcp-session-id']) {
-      mcpSessionId = res.headers['mcp-session-id']
+  function isSessionExpiry(response, body) {
+    if (response.status !== 401 || !body?.error) return false
+    const message = String(body.error.message ?? '')
+    const code = body.error.data?.code
+    return code === 'AUTH_REQUIRED' && (
+      /MCP session is invalid or expired/i.test(message) ||
+      /Mcp-Session-Id header is required/i.test(message) ||
+      /Call initialize first/i.test(message)
+    )
+  }
+
+  function isIndependentRead(payload) {
+    if (payload.method === 'tools/list' || payload.method === 'ping') return true
+    if (payload.method !== 'tools/call') return false
+    const name = String(payload.params?.name ?? '')
+    return /(?:^|\.)(?:list|get|resolve|search|check)$/.test(name) || /(?:_check|_occupancy)$/.test(name)
+  }
+
+  async function initializeSession() {
+    if (sessionResetPromise) return sessionResetPromise
+
+    sessionResetPromise = (async () => {
+      mcpSessionId = null
+      const initializePayload = {
+        jsonrpc: '2.0',
+        id: `session-restart-${Date.now()}`,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: CLIENT_NAME, version: CLI_VERSION },
+        },
+      }
+      const response = await rawRpc(initializePayload, { includeSession: false })
+      const body = parseJsonResponse(response)
+      if (response.status === 401) {
+        authenticationInvalid = true
+        clearTokens()
+        throw new Error(`Authentication expired. ${loginInstruction()}`)
+      }
+      if (response.status < 200 || response.status >= 300 || body?.error) {
+        throw new Error(`MCP session restart failed (${response.status}): ${body?.error?.message ?? response.body}`)
+      }
+      if (!mcpSessionId) throw new Error('MCP session restart did not return Mcp-Session-Id')
+
+      const initializedResponse = await rawRpc({ jsonrpc: '2.0', method: 'notifications/initialized' })
+      if (initializedResponse.status < 200 || initializedResponse.status >= 300) {
+        throw new Error(`MCP session restart notification failed (${initializedResponse.status})`)
+      }
+    })().finally(() => {
+      sessionResetPromise = null
+    })
+
+    return sessionResetPromise
+  }
+
+  async function proxyRpc(payload) {
+    if (authenticationInvalid || isTokenExpired(tokens)) {
+      authenticationInvalid = true
+      clearTokens()
+      return rpcError(payload, -32001, `Authentication expired. ${loginInstruction()}`)
+    }
+
+    let res = await rawRpc(payload)
+    let body = parseJsonResponse(res)
+
+    if (isSessionExpiry(res, body) && payload.method !== 'initialize') {
+      try {
+        await initializeSession()
+      } catch (error) {
+        return rpcError(
+          payload,
+          authenticationInvalid ? -32001 : -32603,
+          error.message || (authenticationInvalid ? `Authentication expired. ${loginInstruction()}` : 'MCP session restart failed')
+        )
+      }
+      if (!isIndependentRead(payload)) {
+        return rpcError(
+          payload,
+          -32003,
+          'MCP session restarted. Retry this write request explicitly; it was not replayed automatically.'
+        )
+      }
+      res = await rawRpc(payload)
+      body = parseJsonResponse(res)
     }
 
     if (res.status === 401) {
-      return {
-        jsonrpc: '2.0',
-        id: payload.id ?? null,
-        error: {
-          code: -32001,
-          message: `Authentication expired. Run: ${CLI_NAME} login`,
-        },
-      }
+      authenticationInvalid = true
+      clearTokens()
+      return rpcError(payload, -32001, `Authentication expired. ${loginInstruction()}`)
     }
 
     if (res.status === 202) {
       return null
     }
 
-    try {
-      return res.json()
-    } catch {
-      return {
-        jsonrpc: '2.0',
-        id: payload.id ?? null,
-        error: { code: -32603, message: `Server returned ${res.status}: ${res.body}` },
-      }
+    return body ?? rpcError(payload, -32603, `Server returned ${res.status}: ${res.body}`)
+  }
+
+  let orderingBarrier = Promise.resolve()
+  const activeReads = new Set()
+  const activeRequests = new Set()
+
+  function scheduleRpc(payload) {
+    let request
+    if (isIndependentRead(payload)) {
+      request = orderingBarrier.then(() => proxyRpc(payload))
+      activeReads.add(request)
+      request.finally(() => activeReads.delete(request))
+    } else {
+      const earlierReads = [...activeReads]
+      activeReads.clear()
+      request = orderingBarrier
+        .then(() => Promise.allSettled(earlierReads))
+        .then(() => proxyRpc(payload))
+      orderingBarrier = request.then(() => undefined, () => undefined)
     }
+
+    activeRequests.add(request)
+    request
+      .then((result) => {
+        if (result) process.stdout.write(JSON.stringify(result) + '\n')
+      })
+      .catch((error) => {
+        process.stdout.write(JSON.stringify(rpcError(payload, -32603, error.message || 'Proxy error')) + '\n')
+      })
+      .finally(() => activeRequests.delete(request))
   }
 
   const rl = createInterface({ input: process.stdin })
@@ -367,20 +558,73 @@ async function serve() {
       continue
     }
 
-    try {
-      const result = await proxyRpc(payload)
-      if (result) {
-        process.stdout.write(JSON.stringify(result) + '\n')
-      }
-    } catch (error) {
-      const err = {
-        jsonrpc: '2.0',
-        id: payload.id ?? null,
-        error: { code: -32603, message: error.message || 'Proxy error' },
-      }
-      process.stdout.write(JSON.stringify(err) + '\n')
-    }
+    scheduleRpc(payload)
   }
+
+  await Promise.allSettled([...activeRequests])
+}
+
+async function status() {
+  const tokens = loadTokens()
+  if (!tokens?.access_token) throw new Error(`Not logged in. ${loginInstruction()}`)
+
+  const expiresAt = tokenExpiresAt(tokens)
+  if (isTokenExpired(tokens)) {
+    clearTokens()
+    throw new Error(`Authentication expired${expiresAt ? ` at ${expiresAt.toISOString()}` : ''}. ${loginInstruction()}`)
+  }
+  if (tokens.mcp_url && tokens.mcp_url !== MCP_URL) {
+    throw new Error(`Stored login is for ${tokens.mcp_url}, but this client is configured for ${MCP_URL}. ${loginInstruction()}`)
+  }
+
+  const initializeResponse = await httpRequest(MCP_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${tokens.access_token}`,
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 'status-check',
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-03-26',
+        capabilities: {},
+        clientInfo: { name: CLIENT_NAME, version: CLI_VERSION },
+      },
+    }),
+  })
+  const body = parseJsonResponse(initializeResponse)
+  if (initializeResponse.status === 401) {
+    clearTokens()
+    throw new Error(`Authentication expired or was revoked. ${loginInstruction()}`)
+  }
+  if (initializeResponse.status < 200 || initializeResponse.status >= 300 || body?.error) {
+    throw new Error(`Connection check failed (${initializeResponse.status}): ${body?.error?.message ?? initializeResponse.body}`)
+  }
+
+  const sessionId = initializeResponse.headers['mcp-session-id']
+  if (!sessionId) throw new Error('Connection check failed: server did not return Mcp-Session-Id')
+
+  try {
+    await httpRequest(MCP_URL, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${tokens.access_token}`,
+        'Mcp-Session-Id': sessionId,
+      },
+    })
+  } catch {
+    // The authenticated initialize already proved connectivity; session cleanup is best-effort.
+  }
+
+  console.error(`Connected to ${MCP_URL}`)
+  console.error(`  CLI version: ${CLI_VERSION}`)
+  console.error(`  authenticated: ${tokens.obtained_at ?? 'unknown'}`)
+  console.error(`  token expires: ${expiresAt?.toISOString() ?? 'not provided by server'}`)
+  console.error(`  scope: ${tokens.scope ?? 'not provided by server'}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -396,33 +640,30 @@ switch (command) {
   case 'logout':
     logout().catch((err) => { console.error(err.message); process.exit(1) })
     break
-  case 'status': {
-    const t = loadTokens()
-    if (t) {
-      console.error(`Logged in to ${t.mcp_url}`)
-      console.error(`  obtained: ${t.obtained_at}`)
-      console.error(`  expires_in: ${t.expires_in}s`)
-      console.error(`  scope: ${t.scope}`)
-    } else {
-      console.error(`Not logged in. Run: ${CLI_NAME} login`)
-    }
+  case 'status':
+    status().catch((err) => { console.error(err.message); process.exit(1) })
     break
-  }
+  case '--version':
+  case 'version':
+    console.log(CLI_VERSION)
+    break
   case undefined:
   case 'serve':
     serve().catch((err) => { console.error(err.message); process.exit(1) })
     break
   default:
-    console.error(`Usage: ${CLI_NAME} [login|logout|status|serve]`)
+    console.error(`Usage: ${CLI_NAME} [login|logout|status|serve|version]`)
     console.error(`   or: npx -y ${PACKAGE_SPEC} [command]`)
     console.error(`\nCommands:`)
     console.error(`  serve    Start stdio MCP server (default)`)
     console.error(`  login    Authenticate with Fun for Kids`)
     console.error(`  logout   Revoke and clear stored token`)
-    console.error(`  status   Show current auth status`)
+    console.error(`  status   Verify authentication and MCP connectivity`)
+    console.error(`  version  Show CLI version`)
     console.error(`\nEnvironment:`)
     console.error(`  FUN_FOR_KIDS_MCP_URL  Override server URL (default: ${DEFAULT_MCP_URL})`)
     console.error(`  FUN_FOR_KIDS_MCP_TOKEN_DIR  Override token dir under home (default: ${TOKEN_DIR_NAME})`)
     console.error(`  FUN_FOR_KIDS_MCP_SCOPES  Space-separated OAuth scopes`)
+    console.error(`  FUN_FOR_KIDS_MCP_REQUEST_TIMEOUT_MS  HTTP timeout in milliseconds (default: ${REQUEST_TIMEOUT_MS})`)
     process.exit(1)
 }
